@@ -196,11 +196,12 @@ decodeUtf8With onErr (PS fp off len) = runText $ \done -> do
 -- or continuation where it is encountered.
 
 -- | A stream oriented decoding result.
-data Decoding = Some Text (ByteString -> Decoding)
+data Decoding = Some Text ByteString (ByteString -> Decoding)
 
 instance Show Decoding where
-    showsPrec d (Some t _) = showParen (d > prec) $
-                             showString "Some " . showsPrec (prec+1) t
+    showsPrec d (Some t r _) = showParen (d > prec) $
+                               showString "Some " . showsPrec (prec+1) t
+                               . showChar ' ' . shows r
       where prec = 10
 
 newtype CodePoint = CodePoint Word32 deriving (Eq, Show, Num, Storable)
@@ -224,7 +225,7 @@ streamDecodeUtf8With onErr = decodeChunk 0 0
   -- We create a slightly larger than necessary buffer to accommodate a
   -- potential surrogate pair started in the last buffer
   decodeChunk :: CodePoint -> DecoderState -> ByteString -> Decoding
-  decodeChunk codepoint0 state0 (PS fp off len) =
+  decodeChunk codepoint0 state0 bs@(PS fp off len) =
     runST $ (unsafeIOToST . decodeChunkToBuffer) =<< A.new (len+1)
    where
     decodeChunkToBuffer :: A.MArray s -> IO Decoding
@@ -258,7 +259,9 @@ streamDecodeUtf8With onErr = decodeChunk 0 0
                   chunkText <- unsafeSTToIO $ do
                       arr <- A.unsafeFreeze dest
                       return $! textP arr 0 (fromIntegral n)
-                  return $ Some chunkText (decodeChunk codepoint state)
+                  let nConsumed = curPtr `minusPtr` ptr
+                      rest = B.drop nConsumed bs
+                  return $ Some chunkText rest (decodeChunk codepoint state)
         in loop (ptr `plusPtr` off)
   desc = "Data.Text.Encoding.streamDecodeUtf8With: Invalid UTF-8 stream"
 
