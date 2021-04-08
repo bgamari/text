@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, MagicHash, Rank2Types #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- |
 -- Module      : Data.Text.Internal.Fusion.Common
 -- Copyright   : (c) Bryan O'Sullivan 2009, 2012
@@ -912,10 +913,13 @@ data Zip a b m = Z1 !a !b
 
 -- | zipWith generalises 'zip' by zipping with the function given as
 -- the first argument, instead of a tupling function.
-zipWith :: (a -> a -> b) -> Stream a -> Stream a -> Stream b
-zipWith f (Stream next0 sa0 len1) (Stream next1 sb0 len2) =
+zipWith :: forall a b. (a -> a -> b) -> Stream a -> Stream a -> Stream b
+zipWith f
+        (Stream next0 (sa0 :: sa) len1)
+        (Stream next1 (sb0 :: sb) len2) =
     Stream next (Z1 sa0 sb0) (smaller len1 len2)
     where
+      next :: Zip sa sb a -> Step (Zip sa sb a) b
       next (Z1 sa sb) = case next0 sa of
                           Done -> Done
                           Skip sa' -> Skip (Z1 sa' sb)
