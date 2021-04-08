@@ -917,8 +917,9 @@ zipWith :: forall a b. (a -> a -> b) -> Stream a -> Stream a -> Stream b
 zipWith f
         (Stream next0 (sa0 :: sa) len1)
         (Stream next1 (sb0 :: sb) len2) =
-    Stream next (Z1 sa0 sb0) (smaller len1 len2)
+    Stream next (Z1 sa0 sb0) s
     where
+      !s = smaller len1 len2
       next :: Zip sa sb a -> Step (Zip sa sb a) b
       next (Z1 sa sb) = case next0 sa of
                           Done -> Done
