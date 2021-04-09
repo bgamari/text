@@ -176,8 +176,9 @@ reverse (Stream next s len0)
 -- | /O(n)/ Perform the equivalent of 'scanr' over a list, only with
 -- the input and result reversed.
 reverseScanr :: (Char -> Char -> Char) -> Char -> Stream Char -> Stream Char
-reverseScanr f z0 (Stream next0 s0 len) = Stream next (Scan1 z0 s0) (len+1) -- HINT maybe too low
+reverseScanr f z0 (Stream next0 s0 len) = Stream next (Scan1 z0 s0) len'
   where
+    !len' = len+1 -- HINT maybe too low
     {-# INLINE next #-}
     next (Scan1 z s) = Yield z (Scan2 z s)
     next (Scan2 z s) = case next0 s of

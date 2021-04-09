@@ -176,8 +176,9 @@ data C s = C0 !s
 
 -- | /O(n)/ Adds a character to the front of a Stream Char.
 cons :: Char -> Stream Char -> Stream Char
-cons !w (Stream next0 s0 len) = Stream next (C1 s0) (len + codePointsSize 1)
+cons !w (Stream next0 s0 len) = Stream next (C1 s0) len'
     where
+      !len' = len + codePointsSize 1
       next (C1 s) = Yield w (C0 s)
       next (C0 s) = case next0 s of
                           Done -> Done
@@ -205,8 +206,9 @@ data E l r = L !l
 -- | /O(n)/ Appends one Stream to the other.
 append :: Stream Char -> Stream Char -> Stream Char
 append (Stream next0 s01 len1) (Stream next1 s02 len2) =
-    Stream next (L s01) (len1 + len2)
+    Stream next (L s01) len'
     where
+      !len' = len1 + len2
       next (L s1) = case next0 s1 of
                          Done        -> Skip    (R s02)
                          Skip s1'    -> Skip    (L s1')
@@ -261,8 +263,9 @@ last (Stream next s0 _len) = loop0_last s0
 -- | /O(1)/ Returns all characters after the head of a Stream Char, which must
 -- be non-empty.
 tail :: Stream Char -> Stream Char
-tail (Stream next0 s0 len) = Stream next (C0 s0) (len - codePointsSize 1)
+tail (Stream next0 s0 len) = Stream next (C0 s0) len'
     where
+      !len' = len - codePointsSize 1
       next (C0 s) = case next0 s of
                       Done       -> emptyError "tail"
                       Skip s'    -> Skip (C0 s')
@@ -279,8 +282,9 @@ data Init s = Init0 !s
 -- | /O(1)/ Returns all but the last character of a Stream Char, which
 -- must be non-empty.
 init :: Stream Char -> Stream Char
-init (Stream next0 s0 len) = Stream next (Init0 s0) (len - codePointsSize 1)
+init (Stream next0 s0 len) = Stream next (Init0 s0) len'
     where
+      !len' = len - codePointsSize 1
       next (Init0 s) = case next0 s of
                          Done       -> emptyError "init"
                          Skip s'    -> Skip (Init0 s')
@@ -352,8 +356,9 @@ isSingleton (Stream next s0 _len) = loop 0 s0
 -- | /O(n)/ 'map' @f @xs is the Stream Char obtained by applying @f@
 -- to each element of @xs@.
 map :: (Char -> Char) -> Stream Char -> Stream Char
-map f (Stream next0 s0 len) = Stream next s0 len
+map f (Stream next0 s0 len) = Stream next s0 len'
     where
+      !len' = len
       next !s = case next0 s of
                   Done       -> Done
                   Skip s'    -> Skip s'
@@ -372,8 +377,9 @@ data I s = I1 !s
 -- | /O(n)/ Take a character and place it between each of the
 -- characters of a 'Stream Char'.
 intersperse :: Char -> Stream Char -> Stream Char
-intersperse c (Stream next0 s0 len) = Stream next (I1 s0) (len + unknownSize)
+intersperse c (Stream next0 s0 len) = Stream next (I1 s0) len'
     where
+      !len' = len + unknownSize
       next (I1 s) = case next0 s of
         Done       -> Done
         Skip s'    -> Skip (I1 s')
@@ -401,8 +407,9 @@ intersperse c (Stream next0 s0 len) = Stream next (I1 s0) (len + unknownSize)
 caseConvert :: (forall s. Char -> s -> Step (CC s) Char)
             -> Stream Char -> Stream Char
 caseConvert remap (Stream next0 s0 len) =
-    Stream next (CC s0 '\0' '\0') (len `unionSize` (3*len))
+    Stream next (CC s0 '\0' '\0') len'
   where
+    !len' = len `unionSize` (3*len)
     next (CC s '\0' _) =
         case next0 s of
           Done       -> Done
@@ -736,8 +743,9 @@ unfoldrNI n f s0 | n <  0    = empty
 -- length of the stream.
 take :: Integral a => a -> Stream Char -> Stream Char
 take n0 (Stream next0 s0 len) =
-    Stream next (n0' :*: s0) (smaller len (codePointsSize $ fromIntegral n0'))
+    Stream next (n0' :*: s0) len'
     where
+      !len' = smaller len (codePointsSize $ fromIntegral n0')
       n0' = max n0 0
 
       {-# INLINE next #-}
@@ -756,9 +764,10 @@ data Drop a s = NS !s
 -- is greater than the length of the stream.
 drop :: Integral a => a -> Stream Char -> Stream Char
 drop n0 (Stream next0 s0 len) =
-    Stream next (JS n0' s0) (len - codePointsSize (fromIntegral n0'))
+    Stream next (JS n0' s0) len'
   where
     n0' = max n0 0
+    !len' = len - codePointsSize (fromIntegral n0')
 
     {-# INLINE next #-}
     next (JS n s)
@@ -868,8 +877,9 @@ indexI (Stream next s0 _len) n0
 -- predicate.
 filter :: (Char -> Bool) -> Stream Char -> Stream Char
 filter p (Stream next0 s0 len) =
-    Stream next s0 (len - unknownSize) -- HINT maybe too high
+    Stream next s0 len'
   where
+    !len' = len - unknownSize  -- HINT maybe too high
     next !s = case next0 s of
                 Done                   -> Done
                 Skip    s'             -> Skip    s'
@@ -917,9 +927,9 @@ zipWith :: forall a b. (a -> a -> b) -> Stream a -> Stream a -> Stream b
 zipWith f
         (Stream next0 (sa0 :: sa) len1)
         (Stream next1 (sb0 :: sb) len2) =
-    Stream next (Z1 sa0 sb0) s
+    Stream next (Z1 sa0 sb0) len'
     where
-      !s = smaller len1 len2
+      !len' = smaller len1 len2
       next :: Zip sa sb a -> Step (Zip sa sb a) b
       next (Z1 sa sb) = case next0 sa of
                           Done -> Done
