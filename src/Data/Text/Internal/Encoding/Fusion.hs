@@ -55,6 +55,7 @@ import qualified Data.Text.Internal.Encoding.Utf16 as U16
 import qualified Data.Text.Internal.Encoding.Utf32 as U32
 import Data.Text.Unsafe (unsafeDupablePerformIO)
 import Data.Text.Internal.ByteStringCompat
+import Debug.Trace
 
 streamASCII :: ByteString -> Stream Char
 streamASCII bs = Stream next 0 (maxSize l)
@@ -99,7 +100,12 @@ streamUtf16LE onErr bs = Stream next 0 (maxSize (l `shiftR` 1))
       {-# INLINE next #-}
       next i
           | i >= l                         = Done
-          | i+1 < l && U16.validate1 x1    = Yield (unsafeChr x1) (i+2)
+          | traceShow ("stream", x1, x2) $
+            i+1 < l && U16.validate1 x1    = 
+#if GOOD
+                                             trace "a" $
+#endif
+                                             Yield (unsafeChr x1) (i+2)
           | i+3 < l && U16.validate2 x1 x2 = Yield (U16.chr2 x1 x2) (i+4)
           | otherwise = decodeError "streamUtf16LE" "UTF-16LE" onErr Nothing (i+1)
           where
