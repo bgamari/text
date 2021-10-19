@@ -91,6 +91,10 @@ streamUtf8 onErr bs = Stream next 0 (maxSize l)
             idx = B.unsafeIndex bs
 {-# INLINE [0] streamUtf8 #-}
 
+id' :: a -> a
+id' x = x
+{-# NOINLINE id' #-}
+
 -- | /O(n)/ Convert a 'ByteString' into a 'Stream Char', using little
 -- endian UTF-16 encoding.
 streamUtf16LE :: OnDecodeError -> ByteString -> Stream Char
@@ -103,7 +107,7 @@ streamUtf16LE onErr bs = Stream next 0 (maxSize (l `shiftR` 1))
           | traceShow ("stream", x1, x2) $
             i+1 < l && U16.validate1 x1    = 
 #if GOOD
-                                             trace "a" $
+                                             id'
 #endif
                                              Yield (unsafeChr x1) (i+2)
           | i+3 < l && U16.validate2 x1 x2 = Yield (U16.chr2 x1 x2) (i+4)
