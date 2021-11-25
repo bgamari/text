@@ -74,7 +74,7 @@ flag developer
 
 flag simdutf
   description: use simdutf library
-  default: True
+  default: False
   manual: True
 
 library
@@ -100,6 +100,10 @@ library
         extra-libraries: c++
       else
         extra-libraries: stdc++
+  else
+    c-sources: cbits/c_validator.c
+    cc-options: -mavx2
+    cpp-options: -DZVALIDATE
 
   exposed-modules:
     Data.Text

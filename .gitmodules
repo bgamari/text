@@ -1,0 +1,3 @@
+[submodule "faster-utf8-validator"]
+	path = faster-utf8-validator
+	url = https://github.com/zwegner/faster-utf8-validator
