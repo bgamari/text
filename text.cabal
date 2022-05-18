@@ -90,7 +90,9 @@ library
                  cbits/validate_utf8.cpp
     cxx-options: -std=c++17
     cpp-options: -DSIMDUTF
-    if os(darwin) || os(freebsd)
+    if impl(ghc >= 9.3)
+      build-depends: system-cxx-std-lib
+    elif os(darwin) || os(freebsd)
       extra-libraries: c++
     elif os(openbsd)
       extra-libraries: c++ c++abi pthread
